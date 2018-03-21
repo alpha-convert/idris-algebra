@@ -71,7 +71,7 @@ lMidCancel {x=x} {y=y} {z=z} = let lside = rMultIntro Refl Main.e in
 prodInv : (Group a) => {x,y : a} -> ((inv y) <*> (inv x) = inv (x <*> y))
 prodInv {y=y} = lMultIdIsInv $ trans rAssoc $ trans lMidCancel (lInv {x=y})
 
-data HomLaw : (a -> b) -> Type where
+data HomLaw : (Group a,Group b) => (a -> b) -> Type where
   MkHomLaw : (Group a, Group b) => {f : a -> b}
              -> ((x,y: a) -> (f (x <*> y) = (f x) <*> (f y)))
              -> HomLaw f
@@ -95,14 +95,14 @@ composeProof : (Group a, Group b, Group c) =>  (g : b -> c)
   -> (f : a -> b) 
   -> (h : a -> c) 
   -> ((z : a) -> (g (f z) = h z))
-  -> (homLawG : (x : b) -> (y : b) -> g (x <*> y) = ((g x) <*> (g y))) 
-  -> (homLawF : (x : a) -> (y : a) -> f (x <*> y) = ((f x) <*> (f y))) 
+  -> (HomLaw g)
+  -> (HomLaw f)
   -> (x : a) 
   -> (y : a) 
   -> h (x <*> y) = ((h x) <*> (h y))
 composeProof g f h pf 
-             homLawG 
-             homLawF 
+             (MkHomLaw homLawG)
+             (MkHomLaw homLawF)
              x y = let hlgSpec = homLawG (f x) (f y) in
                        let pfSpec = pf (x <*> y) in
                                (trans (sym pfSpec) (trans p (trans hlgSpec (multEq (pf x) (pf y)))))
@@ -114,6 +114,6 @@ composeWithProof : (g : b -> c) -> (f : a -> b) -> (h**(x : a) -> (g . f) x = h 
 composeWithProof g f = (g . f ** (\_ => Refl))
 
 compose_hom : (Group a, Group b, Group c) => (g : Hom b c) -> (f : Hom a b) -> Hom a c
-compose_hom (MkHom g (MkHomLaw homLawG)) 
-            (MkHom f (MkHomLaw homLawF)) = let (h**pf) = composeWithProof g f in
+compose_hom (MkHom g homLawG) 
+            (MkHom f homLawF) = let (h**pf) = composeWithProof g f in
                                                MkHom h (MkHomLaw {f=h} (composeProof g f h pf homLawG homLawF))
