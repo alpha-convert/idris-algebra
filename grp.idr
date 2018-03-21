@@ -80,6 +80,9 @@ data HomLaw : (Group a,Group b) => (a -> b) -> Type where
 data Hom : Type -> Type -> Type where
   MkHom : (Group a,Group b) => (f : a -> b) -> HomLaw f -> Hom a b
 
+applyHom : Hom a b -> a -> b
+applyHom (MkHom f _) y = f y
+
 funEq : {f : a -> b} -> {x,y : a} -> (x = y) -> (f x = f y)
 funEq Refl = Refl
 
@@ -113,7 +116,23 @@ composeProof g f h pf
 composeWithProof : (g : b -> c) -> (f : a -> b) -> (h**(x : a) -> (g . f) x = h x)
 composeWithProof g f = (g . f ** (\_ => Refl))
 
-compose_hom : (Group a, Group b, Group c) => (g : Hom b c) -> (f : Hom a b) -> Hom a c
-compose_hom (MkHom g homLawG) 
+composeHom : (Group a, Group b, Group c) => (g : Hom b c) -> (f : Hom a b) -> Hom a c
+composeHom (MkHom g homLawG) 
             (MkHom f homLawF) = let (h**pf) = composeWithProof g f in
                                                MkHom h (MkHomLaw {f=h} (composeProof g f h pf homLawG homLawF))
+
+--using "id" instead of "the a" wasn't typechecking for some reason...
+idHom : {a : Type} -> (Group a) => Hom a a
+idHom {a=a} = MkHom (the a) (MkHomLaw $ \x => \y => Refl) 
+
+--Eta... gotta axiomatize it.
+eqHom : (Group a,Group b) => (f : Hom a b) 
+  -> (g : Hom a b) 
+  -> ((x : a) -> (applyHom f x) = (applyHom g x))
+  -> f = g
+eqHom _ _ = believe_me
+
+
+lComposeIdHom : (Group a,Group b) => (f : Hom a b) -> ((composeHom (idHom {a=b}) f) = f)
+
+
