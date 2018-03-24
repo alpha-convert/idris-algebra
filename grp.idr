@@ -134,5 +134,5 @@ eqHom : (Group a,Group b) => (f : Hom a b)
   -> f = g
 eqHom _ _ = believe_me
 
-lIdHomCompose : (ag : Group a, bg : Group b) => (f : Hom a b) -> (composeHom idHom f = f)
+lIdHomCompose : (ag : Group a, bg : Group b) => (f : Hom a b) -> (composeHom Main.idHom f = f)
 lIdHomCompose f = eqHom (composeHom idHom f) f ?pf
