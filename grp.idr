@@ -134,5 +134,20 @@ eqHom : (Group a,Group b) => (f : Hom a b)
   -> f = g
 eqHom _ _ = believe_me
 
-lIdHomCompose : (ag : Group a, bg : Group b) => (f : Hom a b) -> (composeHom Main.idHom f = f)
-lIdHomCompose f = eqHom (composeHom idHom f) f ?pf
+applyCompose : (ag : Group a, bg : Group b, cg: Group c) => (g : Hom b c)
+  -> (f : Hom a b)
+  -> (x : a)
+  -> applyHom (composeHom g f) x = applyHom g (applyHom f x)
+applyCompose (MkHom hg pfg) (MkHom hf pff) x = Refl
+
+lIdComposePf : (Group a,Group b) => (f : Hom a b) -> (x : a) -> applyHom (composeHom Main.idHom f) x = applyHom f x
+lIdComposePf f x = applyCompose idHom f x
+
+rIdComposePf : (Group a, Group b) => (f : Hom a b) -> (x : a) -> applyHom (composeHom f Main.idHom) x = applyHom f x
+rIdComposePf f x = applyCompose f idHom x
+
+lIdHomCompose : (Group a,Group b) => (f : Hom a b) -> (composeHom Main.idHom f = f)
+lIdHomCompose f = eqHom (composeHom idHom f) f (lIdComposePf f)
+
+rIdHomCompose : (Group a,Group b) => (f : Hom a b) -> (composeHom f Main.idHom = f)
+rIdHomCompose f = eqHom (composeHom f idHom) f (rIdComposePf f)
