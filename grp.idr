@@ -50,6 +50,12 @@ lMultSubst Refl Refl = Refl
 rMultSubst : (Group a) => {x,x',y,z : a} -> (x = x') -> (y <*> x = z) -> (y <*> x' = z)
 rMultSubst Refl Refl = Refl
 
+lMultSubst2 : (Group a) => {x,x',y : a} -> (x = x') -> (x <*> y = x' <*> y)
+lMultSubst2 Refl = Refl
+
+rMultSubst2 : (Group a) => {x,x',y : a} -> (x = x') -> (y <*> x = y <*> x')
+rMultSubst2 Refl = Refl
+
 lMultInvHelper : (Group a) => {g,g' : a} -> (inv g <*> g <*> g' = g')
 lMultInvHelper = lMultSubst (sym lInv) lId
 
@@ -71,14 +77,11 @@ lMidCancel {x=x} {y=y} {z=z} = let lside = rMultIntro Refl Main.e in
 prodInv : (Group a) => {x,y : a} -> ((inv y) <*> (inv x) = inv (x <*> y))
 prodInv {y=y} = lMultIdIsInv $ trans rAssoc $ trans lMidCancel (lInv {x=y})
 
-data HomLaw : (Group a,Group b) => (a -> b) -> Type where
-  MkHomLaw : (Group a, Group b) => {f : a -> b}
-             -> ((x,y: a) -> (f (x <*> y) = (f x) <*> (f y)))
-             -> HomLaw f
-
 
 data Hom : Type -> Type -> Type where
-  MkHom : (Group a,Group b) => (f : a -> b) -> HomLaw f -> Hom a b
+  MkHom : (Group a,Group b) => (f : a -> b)
+  -> ((x,y : a) -> (f (x <*> y) = (f x) <*> (f y)))
+  -> Hom a b
 
 applyHom : Hom a b -> a -> b
 applyHom (MkHom f _) y = f y
@@ -95,17 +98,17 @@ homUnderHom fIsHom = funEq fIsHom
 
 
 composeProof : (Group a, Group b, Group c) =>  (g : b -> c)
-  -> (f : a -> b) 
-  -> (h : a -> c) 
+  -> (f : a -> b)
+  -> (h : a -> c)
   -> ((z : a) -> (g (f z) = h z))
-  -> (HomLaw g)
-  -> (HomLaw f)
-  -> (x : a) 
-  -> (y : a) 
+  -> ((x,y : b) -> (g (x <*> y) = (g x) <*> (g y)))
+  -> ((x,y : a) -> (f (x <*> y) = (f x) <*> (f y)))
+  -> (x : a)
+  -> (y : a)
   -> h (x <*> y) = ((h x) <*> (h y))
-composeProof g f h pf 
-             (MkHomLaw homLawG)
-             (MkHomLaw homLawF)
+composeProof g f h pf
+             homLawG
+             homLawF
              x y = let hlgSpec = homLawG (f x) (f y) in
                        let pfSpec = pf (x <*> y) in
                                (trans (sym pfSpec) (trans p (trans hlgSpec (multEq (pf x) (pf y)))))
@@ -117,22 +120,19 @@ composeWithProof : (g : b -> c) -> (f : a -> b) -> (h**(x : a) -> (g . f) x = h 
 composeWithProof g f = (g . f ** (\_ => Refl))
 
 composeHom : (Group a, Group b, Group c) => (g : Hom b c) -> (f : Hom a b) -> Hom a c
-composeHom (MkHom g homLawG) 
+composeHom (MkHom g homLawG)
             (MkHom f homLawF) = let (h**pf) = composeWithProof g f in
-                                               MkHom h (MkHomLaw {f=h} (composeProof g f h pf homLawG homLawF))
+                                               MkHom h (composeProof g f h pf homLawG homLawF)
 
---using "id" instead of "the a" wasn't typechecking for some reason...
-idHom : {a : Type} -> (Group a) => Hom a a
-idHom {a=a} = MkHom (the a) (MkHomLaw $ \x => \y => Refl) 
+idHom : (Group a) => Hom a a
+idHom = MkHom id (\x => \y => Refl)
 
---Eta... gotta axiomatize it.
-eqHom : (Group a,Group b) => (f : Hom a b) 
-  -> (g : Hom a b) 
+--Eta
+eqHom : (Group a,Group b) => (f : Hom a b)
+  -> (g : Hom a b)
   -> ((x : a) -> (applyHom f x) = (applyHom g x))
   -> f = g
 eqHom _ _ = believe_me
 
-
-lComposeIdHom : (Group a,Group b) => (f : Hom a b) -> ((composeHom (idHom {a=b}) f) = f)
-
-
+lIdHomCompose : (ag : Group a, bg : Group b) => (f : Hom a b) -> (composeHom idHom f = f)
+lIdHomCompose f = eqHom (composeHom idHom f) f ?pf
